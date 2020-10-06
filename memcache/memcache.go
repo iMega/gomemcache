@@ -20,6 +20,7 @@ package memcache
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -135,6 +136,12 @@ type Client struct {
 	// Timeout specifies the socket read/write timeout.
 	// If zero, DefaultTimeout is used.
 	Timeout time.Duration
+
+	// KeepAlive
+	KeepAlive time.Duration
+
+	// MaxRetries sets the maximum number of retries on this call.
+	MaxRetries uint
 
 	// MaxIdleConns specifies the maximum number of idle connections that will
 	// be maintained per address. If less than one, DefaultMaxIdleConns will be
@@ -260,7 +267,12 @@ func (c *Client) dial(addr net.Addr) (net.Conn, error) {
 		err error
 	}
 
-	nc, err := net.DialTimeout(addr.Network(), addr.String(), c.netTimeout())
+	d := &net.Dialer{
+		Timeout:   c.netTimeout(),
+		KeepAlive: c.KeepAlive,
+	}
+
+	nc, err := d.DialContext(context.Background(), addr.Network(), addr.String())
 	if err == nil {
 		return nc, nil
 	}
@@ -347,6 +359,17 @@ func (c *Client) withKeyAddr(key string, fn func(net.Addr) error) (err error) {
 }
 
 func (c *Client) withAddrRw(addr net.Addr, fn func(*bufio.ReadWriter) error) (err error) {
+	for attempt := uint(0); attempt <= c.MaxRetries; attempt++ {
+		err = c.withAddrRwWrapped(addr, fn)
+		if err == nil || resumableError(err) {
+			break
+		}
+	}
+
+	return
+}
+
+func (c *Client) withAddrRwWrapped(addr net.Addr, fn func(*bufio.ReadWriter) error) (err error) {
 	cn, err := c.getConn(addr)
 	if err != nil {
 		return err
