@@ -1,37 +1,25 @@
-## About
+[![Build Status](https://travis-ci.org/iMega/gomemcache.svg?branch=master)](https://travis-ci.org/iMega/gomemcache)
+
+## gomemcache
 
 This is a memcache client library for the Go programming language
 (http://golang.org/).
 
 ## Installing
 
-### Using *go get*
-
-    $ go get github.com/bradfitz/gomemcache/memcache
-
-After this command *gomemcache* is ready to use. Its source will be in:
-
-    $GOPATH/src/github.com/bradfitz/gomemcache/memcache
+```bash
+    $ go get github.com/iMega/gomemcache
+```
 
 ## Example
 
     import (
-            "github.com/bradfitz/gomemcache/memcache"
+        "github.com/iMega/gomemcache"
     )
 
     func main() {
-         mc := memcache.New("10.0.0.1:11211", "10.0.0.2:11211", "10.0.0.3:11212")
-         mc.Set(&memcache.Item{Key: "foo", Value: []byte("my value")})
+        mc := memcache.New("10.0.0.1:11211", "10.0.0.2:11211", "10.0.0.3:11212")
+        mc.Set(&memcache.Item{Key: "foo", Value: []byte("my value")})
 
-         it, err := mc.Get("foo")
-         ...
+        it, err := mc.Get("foo")
     }
-
-## Full docs, see:
-
-See https://godoc.org/github.com/bradfitz/gomemcache/memcache
-
-Or run:
-
-    $ godoc github.com/bradfitz/gomemcache/memcache
-
